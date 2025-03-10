@@ -1,21 +1,32 @@
 import psycopg2
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ========================
 # Configuration Variables
 # ========================
 
 # NewsData.io API configuration
-API_KEY = 'pub_73836cfc74f6119ac154819b00afe2285b9e3'
+API_KEY = os.getenv('API_KEY')  # Get from .env file
+if not API_KEY:
+    raise ValueError("API_KEY environment variable is not set. Please check your .env file.")
 API_URL = f'https://newsdata.io/api/1/news?apikey={API_KEY}&language=en'
 
 # PostgreSQL configuration
-DB_HOST = 'localhost'
-DB_PORT = 5432
-DB_NAME = 'nexletter'
-DB_USER = 'root'
-DB_PASSWORD = 'Ag9776Hg0483'            
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = int(os.getenv('DB_PORT', '5432'))
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+
+# Verify all required environment variables are set
+if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+    raise ValueError("Database configuration environment variables are missing. Please check your .env file.")
 
 # ========================
 # Database Functions
