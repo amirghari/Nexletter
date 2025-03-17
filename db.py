@@ -36,7 +36,7 @@ def create_table(conn):
     """
     Create the articles table if it does not exist.
     """
-    create_table_query = """    
+    create_table_query = """
     CREATE TABLE IF NOT EXISTS articles (
         id SERIAL PRIMARY KEY,
         title TEXT,
@@ -47,7 +47,8 @@ def create_table(conn):
         description TEXT,
         country TEXT,
         category TEXT[],
-        language TEXT
+        language TEXT,
+        image_url TEXT
     );
     """
     with conn.cursor() as cur:
@@ -82,35 +83,54 @@ def insert_articles(conn, articles):
     Insert articles into the database.
     """
     insert_query = """
-    INSERT INTO articles (title, content, link, pub_date, source, description, country, category, language)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+    INSERT INTO articles (title, content, link, pub_date, source, description, country, category, language, image_url)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
     """
     with conn.cursor() as cur:
         for article in articles:
-            title = article.get('title')
-            content = article.get('content')
-            link = article.get('link')
-            pub_date_raw = article.get('pubDate')
-            # Convert pub_date to a Python datetime object if available
             try:
-                # Try parsing with format from API response: "2025-03-09 23:44:00"
-                pub_date = datetime.strptime(pub_date_raw, "%Y-%m-%d %H:%M:%S") if pub_date_raw else None
-            except ValueError:
+                title = article.get('title')
+                content = article.get('content')
+                link = article.get('link')
+                pub_date_raw = article.get('pubDate')
+                
+                # Convert pub_date to a Python datetime object if available
                 try:
-                    # Fall back to alternative format if needed: "Mon, 09 Mar 2025 23:44:00 GMT"
-                    pub_date = datetime.strptime(pub_date_raw, "%a, %d %b %Y %H:%M:%S %Z") if pub_date_raw else None
+                    # Try parsing with format from API response: "2025-03-09 23:44:00"
+                    pub_date = datetime.strptime(pub_date_raw, "%Y-%m-%d %H:%M:%S") if pub_date_raw else None
                 except ValueError:
-                    # If parsing fails, store None
-                    print(f"Could not parse date: {pub_date_raw}")
-                    pub_date = None
-            source = article.get('source_id')
-            description = article.get('description')
-            country = article.get('country')
-            # Category might be a list; store as array in Postgres
-            category = article.get('category')
-            language = article.get('language')
-            
-            cur.execute(insert_query, (title, content, link, pub_date, source, description, country, category, language))
+                    try:
+                        # Fall back to alternative format if needed: "Mon, 09 Mar 2025 23:44:00 GMT"
+                        pub_date = datetime.strptime(pub_date_raw, "%a, %d %b %Y %H:%M:%S %Z") if pub_date_raw else None
+                    except ValueError:
+                        print(f"Could not parse date: {pub_date_raw}")
+                        pub_date = None
+                
+                source = article.get('source_id')
+                description = article.get('description')
+                country = article.get('country', [])
+                category = article.get('category', [])  
+                language = article.get('language')
+                image = article.get('image_url')
+                # Print debug information
+                print(f"Inserting article: {title[:30]}...")
+                
+                cur.execute(insert_query, (
+                    title,
+                    content,
+                    link,
+                    pub_date,
+                    source,
+                    description,
+                    country,
+                    category if isinstance(category, list) else [],
+                    language,
+                    image
+                ))
+            except Exception as e:
+                print(f"Error inserting article: {str(e)}")
+                continue
+        
         conn.commit()
     print(f"Inserted {len(articles)} articles into the database.")
 
