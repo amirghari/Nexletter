@@ -2,6 +2,7 @@ import psycopg2
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import json
 
 load_dotenv()
 
@@ -63,6 +64,12 @@ if __name__ == '__main__':
 
     recommendations = get_recommendations(conn, user_country, user_interests, limit=10)
     for rec in recommendations:
-        print(rec)
+        recommendations = get_recommendations(conn, user_country, user_interests, limit=10)
+        print(json.dumps(recommendations, indent=4, default=str))
 
     conn.close()
+
+
+
+
+
