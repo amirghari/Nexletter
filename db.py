@@ -2,6 +2,7 @@ import psycopg2
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+import json
 import os
 
 # Load environment variables from .env file
@@ -55,6 +56,39 @@ def create_table(conn):
         cur.execute(create_table_query)
         conn.commit()
     print("Table 'articles' is ready.")
+
+
+def create_users_and_interactions_tables(conn):
+    """
+    Create the users and interactions tables if they do not exist.
+    """
+    create_users_table_query = """
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        preferred_categories TEXT[],
+        preferred_countries TEXT[],
+        liked_categories JSONB DEFAULT '{}'::JSONB,
+        liked_countries JSONB DEFAULT '{}'::JSONB
+    );
+    """
+
+    create_interactions_table_query = """
+    CREATE TABLE IF NOT EXISTS interactions (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users(id),
+        article_id INT NOT NULL REFERENCES articles(id),
+        interaction_type TEXT NOT NULL,
+        time_spent INT DEFAULT 0,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+
+    with conn.cursor() as cur:
+        cur.execute(create_users_table_query)
+        cur.execute(create_interactions_table_query)
+        conn.commit()
+    print("Tables 'users' and 'interactions' are ready.")    
 
 # ========================
 # API Data Fetch Function
@@ -139,7 +173,6 @@ def insert_articles(conn, articles):
 # ========================
 
 def main():
-    # Connect to PostgreSQL
     try:
         conn = psycopg2.connect(
             host=DB_HOST,
@@ -154,19 +187,17 @@ def main():
         print(e)
         return
 
-    # Create articles table if not exists
-    create_table(conn)
+    # Create all tables
+    create_table(conn)  # Create articles table
+    create_users_and_interactions_tables(conn)  # Create users and interactions tables
 
-    # Fetch articles from NewsData.io API
+    # Fetch and Insert articles
     articles = fetch_articles()
-
-    # Insert articles into the database if available
     if articles:
         insert_articles(conn, articles)
     else:
         print("No articles were fetched from the API.")
 
-    # Close the database connection
     conn.close()
     print("Database connection closed.")
 
