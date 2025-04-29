@@ -30,8 +30,8 @@ def fetch_user_profile(conn, user_id):
             return {
                 'preferred_categories': row[0] or [],
                 'preferred_countries': row[1] or [],
-                'liked_categories': json.loads(row[2]) if row[2] else {},
-                'liked_countries': json.loads(row[3]) if row[3] else {}
+                'liked_categories': row[2] or {},  # <-- NO json.loads() needed
+                'liked_countries': row[3] or {}    # <-- NO json.loads() needed
             }
         return None
 
@@ -85,7 +85,7 @@ def calculate_score(article, user_profile, time_spent_map):
 
     return {'article_id': article_id, 'title': title, 'score': score}
 
-def recommend_articles(conn, user_id, limit=50):
+def recommend_articles(conn, user_id, limit=100):
     user_profile = fetch_user_profile(conn, user_id)
     if not user_profile:
         return []
