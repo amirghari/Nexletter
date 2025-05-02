@@ -82,6 +82,8 @@ def calculate_score(article, user_profile, time_spent_map):
         score += 5
     elif time_spent > 600:
         score += 2
+    elif time_spent > 300:
+        score += 1
 
     return {'article_id': article_id, 'title': title, 'score': score}
 
