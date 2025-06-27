@@ -15,3 +15,13 @@ FETCH_TIME_SPENT = """
     FROM interactions
     WHERE user_id = %s
 """
+
+INSERT_LIKED_TITLE = """
+    INSERT INTO liked_titles (user_id, title)
+    VALUES (%s, %s)
+"""
+
+FETCH_LIKED_TITLES = """
+    SELECT title FROM liked_titles
+    WHERE user_id = %s
+"""

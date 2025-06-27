@@ -12,7 +12,7 @@ def recommend_articles(conn, user_id, limit=100):
     time_spent_map = fetch_time_spent(conn, user_id)
 
     scored = [
-        calculate_score(article, user_profile, time_spent_map)
+        calculate_score(article, user_profile, time_spent_map, conn, user_id)
         for article in articles
     ]
 
