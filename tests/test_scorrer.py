@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from recommender.scorer import calculate_score
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def test_score_full_preference_match(mock_conn_with_liked_titles):
     user_id = 1
 
     result = calculate_score(article, user_profile, time_spent_map, mock_conn_with_liked_titles, user_id)
-    assert result["score"] >= 13  # includes 5 + 5 + 5, maybe more from NLP
+    assert result["score"] >= 13
 
 def test_score_with_liked_category_and_country(mock_conn_with_liked_titles):
     article = (2, "Breaking crypto news", "USA", ["crypto"])
@@ -38,7 +38,7 @@ def test_score_with_liked_category_and_country(mock_conn_with_liked_titles):
     user_id = 1
 
     result = calculate_score(article, user_profile, time_spent_map, mock_conn_with_liked_titles, user_id)
-    assert result["score"] >= 7  # 4 + 3 from liked fields
+    assert result["score"] >= 7
 
 def test_score_with_time_spent_bonus(mock_conn_with_liked_titles):
     article = (3, "EU economy news", "France", ["economy"])
@@ -57,3 +57,29 @@ def test_score_with_time_spent_bonus(mock_conn_with_liked_titles):
     assert result1["score"] >= 2
     assert result2["score"] >= 5
     assert result3["score"] >= 0
+
+def test_similarity_score_added(monkeypatch):
+    import nlp.similarity
+    monkeypatch.setattr(nlp.similarity, "compute_max_similarity", lambda x, y: 0.7)
+
+    from recommender import scorer
+
+    article = (9, "AI breakthrough in healthcare", "USA", ["health"])
+    user_profile = {
+        "preferred_countries": [],
+        "preferred_categories": [],
+        "liked_categories": {},
+        "liked_countries": {}
+    }
+    time_spent_map = {}
+    conn = MagicMock()
+    cursor = MagicMock()
+    conn.cursor.return_value.__enter__.return_value = cursor
+    cursor.fetchall.return_value = [
+        ("Some previous article",)
+    ]
+    user_id = 1
+
+    result = scorer.calculate_score(article, user_profile, time_spent_map, conn, user_id)
+
+    assert result['score'] == 7
