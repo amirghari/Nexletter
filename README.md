@@ -56,4 +56,4 @@ python db.py
 
 This repository uses environment variables to store sensitive information like API keys and database credentials. The actual `.env` file containing these values is not committed to the repository for security reasons (it's listed in `.gitignore`).
 
-When deploying to production, always use environment variables or a secure secrets management system instead of hardcoded credentials.
+When deploying to production, always use environment variables or a secure secrets management system instead of hardcoded credentials!
