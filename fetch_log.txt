@@ -1,0 +1,36 @@
+Traceback (most recent call last):
+  File "/Users/amirghari/Nexletter/fetcher/main_fetch.py", line 5, in <module>
+    from newsdata_client import fetch_articles_from_api
+  File "/Users/amirghari/Nexletter/fetcher/newsdata_client.py", line 1, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "/Users/amirghari/Nexletter/fetcher/main_fetch.py", line 5, in <module>
+    from newsdata_client import fetch_articles_from_api
+  File "/Users/amirghari/Nexletter/fetcher/newsdata_client.py", line 1, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "/Users/amirghari/Nexletter/fetcher/main_fetch.py", line 5, in <module>
+    from newsdata_client import fetch_articles_from_api
+  File "/Users/amirghari/Nexletter/fetcher/newsdata_client.py", line 1, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "/Users/amirghari/Nexletter/fetcher/main_fetch.py", line 5, in <module>
+    from newsdata_client import fetch_articles_from_api
+  File "/Users/amirghari/Nexletter/fetcher/newsdata_client.py", line 1, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "/Users/amirghari/Nexletter/fetcher/main_fetch.py", line 5, in <module>
+    from newsdata_client import fetch_articles_from_api
+  File "/Users/amirghari/Nexletter/fetcher/newsdata_client.py", line 1, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "/Users/amirghari/Nexletter/fetcher/main_fetch.py", line 5, in <module>
+    from newsdata_client import fetch_articles_from_api
+  File "/Users/amirghari/Nexletter/fetcher/newsdata_client.py", line 1, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
