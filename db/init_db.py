@@ -1,5 +1,9 @@
+# ✅ Verified & Updated init_db.py with all required tables
+
 def create_tables(conn):
     with conn.cursor() as cur:
+
+        # Articles Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS articles (
                 id SERIAL PRIMARY KEY,
@@ -16,6 +20,7 @@ def create_tables(conn):
             );
         """)
 
+        # Users Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -27,6 +32,7 @@ def create_tables(conn):
             );
         """)
 
+        # Interactions Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS interactions (
                 id SERIAL PRIMARY KEY,
@@ -38,11 +44,35 @@ def create_tables(conn):
             );
         """)
 
+        # Liked Titles Table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS liked_titles (
                 id SERIAL PRIMARY KEY,
                 user_id INT NOT NULL REFERENCES users(id),
                 title TEXT NOT NULL
+            );
+        """)
+
+        # Scoring Configurations Table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS scoring_configurations (
+                id SERIAL PRIMARY KEY,
+                w1 FLOAT NOT NULL,
+                w2 FLOAT NOT NULL,
+                w3 FLOAT NOT NULL,
+                UNIQUE(w1, w2, w3)
+            );
+        """)
+
+        # Recommendation Logs Table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS recommendation_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                article_id INTEGER REFERENCES articles(id) ON DELETE CASCADE,
+                scoring_config_id INTEGER REFERENCES scoring_configurations(id) ON DELETE CASCADE,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                clicked BOOLEAN DEFAULT FALSE
             );
         """)
 
