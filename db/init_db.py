@@ -1,5 +1,4 @@
-# ✅ Verified & Updated init_db.py with all required tables
-
+from connection import get_connection 
 def create_tables(conn):
     with conn.cursor() as cur:
 
@@ -78,3 +77,9 @@ def create_tables(conn):
 
         conn.commit()
         print("✅ All tables are ensured.")
+
+
+if __name__ == "__main__":
+    conn = get_connection()
+    create_tables(conn)
+    conn.close()
