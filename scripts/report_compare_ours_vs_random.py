@@ -1,16 +1,3 @@
-# scripts/report_compare_ours_vs_random.py
-#
-# Compare OUR recommender (from DB logs) vs RANDOM baseline (manual click positions).
-# - OUR: reads the most recent up to 10 impressions per user where scoring_config_id IS NOT NULL.
-#        We treat the ascending timestamp order as the displayed rank and compute P@5 on that.
-# - RANDOM: uses the manual click positions you provided (assumes 10 shown per user).
-#
-# Outputs:
-#   • Console: Markdown tables + overall comparison
-#   • Files (optional): reports/metrics.csv, reports/ctr_comparison.png, reports/p5_comparison.png
-#
-# No DB writes.
-
 import sys, os
 from typing import Dict, List, Tuple
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -27,7 +14,7 @@ USER_LABEL_TO_ID = {
     5: 16,  # U5
 }
 
-# ====== RANDOM BASELINE manual click positions (1-based positions in its random top-10) ======
+# ====== RANDOM BASELINE manual click positions (1-based in random top-10) ======
 RANDOM_CLICK_POSITIONS: Dict[int, List[int]] = {
     1: [10, 2, 4],           # User 1
     2: [3, 7],               # User 2
@@ -97,8 +84,11 @@ def compute_ours_metrics_per_user(conn, user_id: int) -> Tuple[int, int, float, 
     p5 = precision_at_k(clicked_positions, 5, impr)
     return impr, clicks, c, p5
 
-def fmt_pct(x: float) -> str:
+def fmt_dec(x: float) -> str:
     return f"{x:.2f}"
+
+def fmt_pct(x: float) -> str:
+    return f"{100.0*x:.2f}%"
 
 def ensure_reports_dir():
     out_dir = os.path.join(os.path.dirname(__file__), "..", "reports")
@@ -115,17 +105,14 @@ def save_csv(per_user_rows, totals_row, out_path):
         # totals
         w.writerow([])
         w.writerow(["TOTAL", "OURS", totals_row["ours_impr"], totals_row["ours_clicks"],
-                    fmt_pct(totals_row["ours_ctr"]), fmt_pct(totals_row["ours_p5"])])
+                    fmt_dec(totals_row["ours_ctr"]), fmt_dec(totals_row["ours_p5"])])
         w.writerow(["TOTAL", "RANDOM", totals_row["rnd_impr"], totals_row["rnd_clicks"],
-                    fmt_pct(totals_row["rnd_ctr"]), fmt_pct(totals_row["rnd_p5"])])
+                    fmt_dec(totals_row["rnd_ctr"]), fmt_dec(totals_row["rnd_p5"])])
 
 def save_plots(per_user_metrics, out_dir):
-    """
-    per_user_metrics: list of dicts:
-        {"user":"U1","ours_ctr":..,"rnd_ctr":..,"ours_p5":..,"rnd_p5":..}
-    """
     try:
         import matplotlib.pyplot as plt
+        import numpy as np
     except Exception as e:
         print(f"⚠️ Skipping charts (matplotlib not available): {e}")
         return
@@ -136,11 +123,10 @@ def save_plots(per_user_metrics, out_dir):
     ours_p5_vals  = [m["ours_p5"]  for m in per_user_metrics]
     rnd_p5_vals   = [m["rnd_p5"]   for m in per_user_metrics]
 
-    # CTR chart
-    import numpy as np
     x = np.arange(len(users))
     width = 0.35
 
+    # CTR chart
     fig1, ax1 = plt.subplots()
     ax1.bar(x - width/2, ours_ctr_vals, width, label="Ours")
     ax1.bar(x + width/2, rnd_ctr_vals,  width, label="Random")
@@ -171,7 +157,7 @@ def save_plots(per_user_metrics, out_dir):
     print(f"🖼️ Charts saved:\n  • {ctr_path}\n  • {p5_path}")
 
 def print_markdown_tables(per_user_metrics, totals):
-    # Per-user table
+    # Per-user (wide) table
     print("\n### Per-user metrics (Ours vs Random)\n")
     print("| User | Ours Impr | Ours Clicks | Ours CTR | Ours P@5 | Random Impr | Random Clicks | Random CTR | Random P@5 |")
     print("|------|-----------:|------------:|---------:|---------:|------------:|--------------:|-----------:|-----------:|")
@@ -185,6 +171,41 @@ def print_markdown_tables(per_user_metrics, totals):
     print("|--------|------------:|-------:|----:|------------:|")
     print(f"| Ours   | {totals['ours_impr']} | {totals['ours_clicks']} | {fmt_pct(totals['ours_ctr'])} | {fmt_pct(totals['ours_p5'])} |")
     print(f"| Random | {totals['rnd_impr']} | {totals['rnd_clicks']} | {fmt_pct(totals['rnd_ctr'])} | {fmt_pct(totals['rnd_p5'])} |")
+
+def save_markdown_tables(per_user_metrics, totals, out_dir):
+    md_path = os.path.join(out_dir, "metrics_table.md")
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write("### Per-user metrics (Ours vs Random)\n\n")
+        f.write("| User | Ours Impr | Ours Clicks | Ours CTR | Ours P@5 | Random Impr | Random Clicks | Random CTR | Random P@5 |\n")
+        f.write("|------|-----------:|------------:|---------:|---------:|------------:|--------------:|-----------:|-----------:|\n")
+        for m in per_user_metrics:
+            f.write(f"| {m['user']} | {m['ours_impr']} | {m['ours_clicks']} | {fmt_pct(m['ours_ctr'])} | {fmt_pct(m['ours_p5'])} | "
+                    f"{m['rnd_impr']} | {m['rnd_clicks']} | {fmt_pct(m['rnd_ctr'])} | {fmt_pct(m['rnd_p5'])} |\n")
+        f.write("\n### Totals\n\n")
+        f.write("| System | Impressions | Clicks | CTR | Precision@5 |\n")
+        f.write("|--------|------------:|-------:|----:|------------:|\n")
+        f.write(f"| Ours   | {totals['ours_impr']} | {totals['ours_clicks']} | {fmt_pct(totals['ours_ctr'])} | {fmt_pct(totals['ours_p5'])} |\n")
+        f.write(f"| Random | {totals['rnd_impr']} | {totals['rnd_clicks']} | {fmt_pct(totals['rnd_ctr'])} | {fmt_pct(totals['rnd_p5'])} |\n")
+    print(f"📝 Markdown table saved: {md_path}")
+
+def save_latex_tables(per_user_metrics, totals, out_dir):
+    tex_path = os.path.join(out_dir, "metrics_table.tex")
+    with open(tex_path, "w", encoding="utf-8") as f:
+        f.write("% Auto-generated metrics table (Ours vs Random)\n")
+        f.write("\\begin{table}[t]\n\\centering\n\\small\n")
+        f.write("\\caption{Per-user comparison of CTR and Precision@5 between our recommender and a random baseline.}\n")
+        f.write("\\label{tab:recsys_per_user}\n")
+        f.write("\\begin{tabular}{lrrrrrrrr}\n\\toprule\n")
+        f.write("User & Ours Impr & Ours Clicks & Ours CTR & Ours P@5 & Rand Impr & Rand Clicks & Rand CTR & Rand P@5 \\\\\n")
+        f.write("\\midrule\n")
+        for m in per_user_metrics:
+            f.write(f"{m['user']} & {m['ours_impr']} & {m['ours_clicks']} & {fmt_pct(m['ours_ctr'])} & {fmt_pct(m['ours_p5'])} & "
+                    f"{m['rnd_impr']} & {m['rnd_clicks']} & {fmt_pct(m['rnd_ctr'])} & {fmt_pct(m['rnd_p5'])} \\\\\n")
+        f.write("\\midrule\n")
+        f.write(f"\\textbf{{Totals}} & {totals['ours_impr']} & {totals['ours_clicks']} & {fmt_pct(totals['ours_ctr'])} & {fmt_pct(totals['ours_p5'])} & "
+                f"{totals['rnd_impr']} & {totals['rnd_clicks']} & {fmt_pct(totals['rnd_ctr'])} & {fmt_pct(totals['rnd_p5'])} \\\\\n")
+        f.write("\\bottomrule\n\\end{tabular}\n\\end{table}\n")
+    print(f"📄 LaTeX table saved: {tex_path}")
 
 def main():
     conn = get_connection()
@@ -231,25 +252,23 @@ def main():
         "rnd_p5": (rnd_p5_acc / users_count) if users_count else 0.0,     # macro-avg P@5
     }
 
-    # Print nice Markdown tables
+    # Console summary (Markdown)
     print_markdown_tables(per_user_metrics, totals)
 
-    # Save CSV + charts
+    # Save CSV + charts + tables
     out_dir = ensure_reports_dir()
-    save_csv(
-        per_user_rows=[
-            [m["user"], "OURS",  m["ours_impr"], m["ours_clicks"], fmt_pct(m["ours_ctr"]), fmt_pct(m["ours_p5"])]
-            for m in per_user_metrics
-        ] + [
-            [m["user"], "RANDOM", m["rnd_impr"], m["rnd_clicks"], fmt_pct(m["rnd_ctr"]), fmt_pct(m["rnd_p5"])]
-            for m in per_user_metrics
-        ],
-        totals_row=totals,
-        out_path=os.path.join(out_dir, "metrics.csv"),
+    # CSV rows (per-user, both systems stacked)
+    per_user_rows = (
+        [[m["user"], "OURS",  m["ours_impr"], m["ours_clicks"], fmt_dec(m["ours_ctr"]), fmt_dec(m["ours_p5"])]
+         for m in per_user_metrics] +
+        [[m["user"], "RANDOM", m["rnd_impr"], m["rnd_clicks"], fmt_dec(m["rnd_ctr"]), fmt_dec(m["rnd_p5"])]
+         for m in per_user_metrics]
     )
-    print(f"\n📄 CSV saved: {os.path.join(out_dir, 'metrics.csv')}")
-
+    save_csv(per_user_rows, totals, os.path.join(out_dir, "metrics.csv"))
     save_plots(per_user_metrics, out_dir)
+    save_markdown_tables(per_user_metrics, totals, out_dir)
+    save_latex_tables(per_user_metrics, totals, out_dir)
+
     print("\n✅ Report complete.")
 
 if __name__ == "__main__":
