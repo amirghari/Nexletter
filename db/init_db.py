@@ -1,6 +1,14 @@
-from connection import get_connection 
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from connection import get_connection
+
 def create_tables(conn):
     with conn.cursor() as cur:
+
+        # Drop dependent tables first to avoid FK issues
+        cur.execute("DROP TABLE IF EXISTS recommendation_logs CASCADE;")
+        cur.execute("DROP TABLE IF EXISTS scoring_configurations CASCADE;")
 
         # Articles Table
         cur.execute("""
@@ -59,7 +67,8 @@ def create_tables(conn):
                 w1 FLOAT NOT NULL,
                 w2 FLOAT NOT NULL,
                 w3 FLOAT NOT NULL,
-                UNIQUE(w1, w2, w3)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE
             );
         """)
 
@@ -76,8 +85,7 @@ def create_tables(conn):
         """)
 
         conn.commit()
-        print("✅ All tables are ensured.")
-
+        print("✅ All tables created and ensured.")
 
 if __name__ == "__main__":
     conn = get_connection()
