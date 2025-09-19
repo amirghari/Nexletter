@@ -259,7 +259,7 @@ def main():
     out_dir = ensure_reports_dir()
     # CSV rows (per-user, both systems stacked)
     per_user_rows = (
-        [[m["user"], "OURS",  m["ours_impr"], m["ours_clicks"], fmt_dec(m["ours_ctr"]), fmt_dec(m["ours_p5"])]
+        [[m["user"], "System",  m["ours_impr"], m["ours_clicks"], fmt_dec(m["ours_ctr"]), fmt_dec(m["ours_p5"])]
          for m in per_user_metrics] +
         [[m["user"], "RANDOM", m["rnd_impr"], m["rnd_clicks"], fmt_dec(m["rnd_ctr"]), fmt_dec(m["rnd_p5"])]
          for m in per_user_metrics]
