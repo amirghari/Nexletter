@@ -27,7 +27,7 @@ pip install psycopg2 requests python-dotenv
    - Fill in your actual credentials in the `.env` file
 
 ```
-cp .env.example .env
+cp .env.example .env.
 ```
 
 4. Edit the `.env` file with your actual credentials:
